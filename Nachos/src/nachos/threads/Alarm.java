@@ -37,7 +37,7 @@ public class Alarm {
     	
     	boolean status = Machine.interrupt().disable(); // disables interrupts
     	
-    	if (timeCheck >= timingQueue.peek()) //checks if the current time is great or equal to the first time in the queue 
+    	if (timeCheck >= timingQueue.peek()) //checks if the current time is greater or equal to the first time in the queue 
     	{
     		readyQueue.remove(); //removes the first thread from the list 
     		timingQueue.remove(); //removes the first time from the list 
@@ -66,6 +66,8 @@ public class Alarm {
      */
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
+    boolean status = Machine.interrupt().disable(); // disables interrupts
+    	
     
 	long wakeTime = Machine.timer().getTime() + x; //a variable with current ticks plus x ticks
 	
@@ -78,5 +80,6 @@ public class Alarm {
 	currentThread.sleep(); // puts the current thread to sleep 
 	//while (wakeTime > Machine.timer().getTime()); not sure if needed anymore 
 	// KThread.yield(); not sure if need anymore
+	Machine.interrupt().restore(status); // re-enables interrupts
     }
 }
