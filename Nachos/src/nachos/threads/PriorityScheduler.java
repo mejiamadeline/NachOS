@@ -223,7 +223,9 @@ public class PriorityScheduler extends Scheduler {
 		public ThreadState(KThread thread) {
 		    this.thread = thread;
 		    this.activeResources = new LinkedList<PriorityQueue>();
-	    	this.futureResources = new LinkedList<PriorityQueue>();
+	    	    this.futureResources = new LinkedList<PriorityQueue>();
+		    this.threadsWaiting = null;
+	    	    effectivePriority = priorityMinimum;
 		    setPriority(priorityDefault);
 		}
 	
@@ -243,20 +245,22 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		// MODIFY
 		public int getEffectivePriority() {
-		    // implement me
+		    	// implement me
 			
 			// IF no resources return this priority
 			// Otherwise find the max priority and donate it here
-			
-			int tempPriority;
+
 			if (activeResources.isEmpty()) {
 				return priority;
 			} else {
-				
+				effectivePriority = priorityMinimum;
+               		 	for (final ThreadState curr : this.threadsWaiting) {
+                			effectivePriority = Math.max(effectivePriority, curr.getEffectivePriority());
+               		 	}
 			}
+
 			
-			
-		    return priority;
+		    return effectivePriority;
 		}
 	
 		/**
@@ -319,5 +323,7 @@ public class PriorityScheduler extends Scheduler {
 		
 		protected final List<PriorityQueue> activeResources;
 		protected final List<PriorityQueue> futureResources;
+	    	protected final List<ThreadState> threadsWaiting;
+		protected int effectivePriority = priorityMinimum;
     }
 }
