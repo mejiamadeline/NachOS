@@ -162,12 +162,14 @@ public class PriorityScheduler extends Scheduler {
     	// Remove the highest priority thread from the wait queue
     	public KThread nextThread() {
     		Lib.assertTrue(Machine.interrupt().disabled());
-    		// implement me
+    		ThreadState thread = pickNextThread();
+    		if (thread == null)
+    		{
+    			return null;
+    		}
     		
-    		
-    		return null;
-    	}
-
+    		}
+    	// implement me
 		/**
 		 * Return the next thread that <tt>nextThread()</tt> would return,
 		 * without modifying the state of this queue.
@@ -177,12 +179,20 @@ public class PriorityScheduler extends Scheduler {
 		 */
     	// MODIFY
 		protected ThreadState pickNextThread() {
+			Lib.assertTrue(Machine.interrupt().disabled());
 		    // implement me
-		    return null;
+			ThreadState nextThread = null;
+    		if ()
+    		{
+    			return null;
+    		}
+    		
 		}
 		
 		public void print() {
 		    Lib.assertTrue(Machine.interrupt().disabled());
+		    System.out.println("Priority Queue: ");
+		    
 		    // implement me (if you want)
 		}
 	
@@ -260,7 +270,6 @@ public class PriorityScheduler extends Scheduler {
 			return;
 		    
 		    this.priority = priority;
-		    
 		    // implement me
 		}
 	
@@ -298,7 +307,6 @@ public class PriorityScheduler extends Scheduler {
 		// MODIFY
 		public void acquire(PriorityQueue waitQueue) {
 		    // implement me
-			Lib.assertTrue(Machine.interrupt().disabled());
 			futureResources.remove(waitQueue);
 			activeResources.add(waitQueue);
 			
