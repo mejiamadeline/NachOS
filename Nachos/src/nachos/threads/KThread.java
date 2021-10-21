@@ -38,6 +38,13 @@ public class KThread {
     	return currentThread;
     }
     
+	
+    
+    private ThreadQueue Queue = ThreadedKernel.scheduler.newThreadQueue(true);
+    private static ThreadQueue readyQueue = null;
+    private Condition2 isDone;
+    private static Lock Lock = new Lock();
+	
     /**
      * Allocate a new <tt>KThread</tt>. If this is the first <tt>KThread</tt>,
      * create an idle thread as well.
@@ -45,7 +52,7 @@ public class KThread {
     public KThread() {
 		if (currentThread != null) {
 		    tcb = new TCB();
-		    isDone = new Condition2(Lock);
+		    isDone = new Condition2(Lock); //condition2
 		}	    
 		else {
 		    readyQueue = ThreadedKernel.scheduler.newThreadQueue(false);
@@ -457,11 +464,6 @@ public class KThread {
     private String name = "(unnamed thread)";
     private Runnable target;
     private TCB tcb;
-    
-    private ThreadQueue Queue = ThreadedKernel.scheduler.newThreadQueue(true);
-    private static ThreadQueue readyQueue = null;
-    private Condition2 isDone;
-    private static Lock Lock = new Lock();
     
     /**
      * Unique identifer for this thread. Used to deterministically compare
