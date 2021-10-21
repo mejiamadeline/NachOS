@@ -157,6 +157,8 @@ public class PriorityScheduler extends Scheduler {
 		    getThreadState(thread).acquire(this);
 		}
 
+    	
+    	// MODIFY
     	// Remove the highest priority thread from the wait queue
     	public KThread nextThread() {
     		Lib.assertTrue(Machine.interrupt().disabled());
@@ -173,6 +175,7 @@ public class PriorityScheduler extends Scheduler {
 		 * @return	the next thread that <tt>nextThread()</tt> would
 		 *		return.
 		 */
+    	// MODIFY
 		protected ThreadState pickNextThread() {
 		    // implement me
 		    return null;
@@ -228,6 +231,7 @@ public class PriorityScheduler extends Scheduler {
 		 *
 		 * @return	the effective priority of the associated thread.
 		 */
+		// MODIFY
 		public int getEffectivePriority() {
 		    // implement me
 			
@@ -250,6 +254,7 @@ public class PriorityScheduler extends Scheduler {
 		 *
 		 * @param	priority	the new priority.
 		 */
+		// MODIFY
 		public void setPriority(int priority) {
 		    if (this.priority == priority)
 			return;
@@ -271,6 +276,7 @@ public class PriorityScheduler extends Scheduler {
 		 *
 		 * @see	nachos.threads.ThreadQueue#waitForAccess
 		 */
+		// MODIFY
 		// DONE
 		public void waitForAccess(PriorityQueue waitQueue) {
 			Lib.assertTrue(Machine.interrupt().disabled());
@@ -289,6 +295,7 @@ public class PriorityScheduler extends Scheduler {
 		 * @see	nachos.threads.ThreadQueue#acquire
 		 * @see	nachos.threads.ThreadQueue#nextThread
 		 */
+		// MODIFY
 		public void acquire(PriorityQueue waitQueue) {
 		    // implement me
 			Lib.assertTrue(Machine.interrupt().disabled());
