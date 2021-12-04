@@ -27,9 +27,10 @@ public class UserProcess {
 	pageTable = new TranslationEntry[numPhysPages];
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
-		fileDescriptor = new OpenFile[maxConcurrentFiles];
-		fileDescriptor[0] = UserKernel.console.openForReading();
-		fileDescriptor[1] = UserKernel.console.openForReading();
+	fileDescriptor = new OpenFile[maxConcurrentFiles];
+	fileDescriptor[0] = UserKernel.console.openForReading();
+	fileDescriptor[1] = UserKernel.console.openForReading();
+	filePos = new int[maxConcurrentFiles];
     }
     
     
@@ -430,7 +431,7 @@ public class UserProcess {
 	String name = readVirtualMemoryString(file,300);
 	if(name == null)
 		return -1;
-		
+	filePosList[fileDescriptor] = 0;
 	for (int i = 0; i < fileDescriptor.length; i++){
 		OpenFile current = fileDescriptor[i];
 		if (current != null && filename == current.getName())
@@ -445,6 +446,97 @@ public class UserProcess {
 
 	return -1;
 
+    }
+	
+     /**
+	 * Attempt to read up to count bytes into buffer from the file or stream
+	 * referred to by fileDescriptor.
+	 *
+	 * On success, the number of bytes read is returned. If the file descriptor
+	 * refers to a file on disk, the file position is advanced by this number.
+	 *
+	 * It is not necessarily an error if this number is smaller than the number of
+	 * bytes requested. If the file descriptor refers to a file on disk, this
+	 * indicates that the end of the file has been reached. If the file descriptor
+	 * refers to a stream, this indicates that the fewer bytes are actually
+	 * available right now than were requested, but more bytes may become available
+	 * in the future. Note that read() never waits for a stream to have more data;
+	 * it always returns as much as possible immediately.
+	 *
+	 * On error, -1 is returned, and the new file position is undefined. This can
+	 * happen if fileDescriptor is invalid, if part of the buffer is read-only or
+	 * invalid, or if a network stream has been terminated by the remote host and
+	 * no more data is available.
+	 */
+    private int handleRead(int FileDesc, int vaddr, int size) {
+    	
+    	// Return -1 if the File Descriptor is < 0 or the number of files running has exceeded the limit, the size of the file is < 0, or the file has not been added to the files list
+    	if ((FileDesc < 0 || FileDesc >= maxConcurrentFiles) || size < 0 || fileDescriptor[FileDesc] == null) {return -1;}
+    	
+    	int byteNum;
+    	byte[] buffer = new byte[size];
+    			
+    	// Account for if the byte number needs to be offset because the File Description is not the first in the list
+	    if(FileDesc <= 1)
+	    	byteNum = fileDescriptor[FileDesc].read(buffer, 0, size); 
+	    else
+	    	byteNum = fileDescriptor[FileDesc].read(filePos[FileDesc], buffer, 0, size); 
+	
+	    			
+	    // Return -1 if there was an issue reading the files
+	    if(byteNum == 0 || byteNum == -1)
+	    	return -1;
+	    			
+	    // Write the buffer into the virtual memory, update file position, and return bytes transferred
+	    int bytesSent = writeVirtualMemory(vaddr, buffer, 0, byteNum);
+	    if(FileDesc >= 2)
+	    	filePos[FileDesc] += bytesSent;	
+	    return bytesSent;
+	    	
+    }
+	
+     /**
+	 * Attempt to write up to count bytes from buffer to the file or stream
+	 * referred to by fileDescriptor. write() can return before the bytes are
+	 * actually flushed to the file or stream. A write to a stream can block,
+	 * however, if kernel queues are temporarily full.
+	 *
+	 * On success, the number of bytes written is returned (zero indicates nothing
+	 * was written), and the file position is advanced by this number. It IS an
+	 * error if this number is smaller than the number of bytes requested. For
+	 * disk files, this indicates that the disk is full. For streams, this
+	 * indicates the stream was terminated by the remote host before all the data
+	 * was transferred.
+	 *
+	 * On error, -1 is returned, and the new file position is undefined. This can
+	 * happen if fileDescriptor is invalid, if part of the buffer is invalid, or
+	 * if a network stream has already been terminated by the remote host.
+	 */
+    private int handleWrite(int FileDesc, int vaddr, int size) {
+    	// Return -1 if the File Descriptor is < 0 or the number of files running has exceeded the limit, the size of the file is < 0, or the file has not been added to the files list
+    	if ((FileDesc < 0 || FileDesc >= maxConcurrentFiles) || size < 0 || fileDescriptor[FileDesc] == null) {return -1;}
+    	
+    	// Figure out how many bytes are needed
+    	byte[] buffer = new byte[size];
+    	int writeBytes = readVirtualMemory(vaddr, buffer, 0, size);
+    			
+    	// Write the file and update its position, accounting for if the byte number needs to be offset because the File Description is not the first in the list
+    	int bytesNum;
+    	if(FileDesc <= 1)
+    		bytesNum =  fileDescriptor[FileDesc].write(buffer, 0, writeBytes);
+    	else
+    		bytesNum =  fileDescriptor[FileDesc].write(filePos[FileDesc], buffer, 0, writeBytes);	
+    		
+    	//Increase the file position by bytesNum if necessary
+    	if(FileDesc >= 2 && bytesNum > 0)
+    		filePos[FileDesc] += bytesNum;
+    	
+    	// If there's an issue with bytesNum size return -1 as an error else return the number of bytes written
+    	if (bytesNum < size && bytesNum != 0)
+    		return -1;
+    	return bytesNum;
+    		
+	
     }
 
 
@@ -490,13 +582,24 @@ public class UserProcess {
      */
     public int handleSyscall(int syscall, int a0, int a1, int a2, int a3) {
 	switch (syscall) {
-	case syscallHalt:
-	    return handleHalt();
+		case syscallHalt:
+		    return handleHalt();
+		case syscallCreate:
+			return handleCreate(a0);
+		case syscallOpen:
+			return handleOpen(a0);
+		case syscallClose:
+			return handleClose(a0);
+		case syscallUnlink:
+			return handleUnlink(a0);
+		case syscallRead:
+			return handleRead(a0, a1, a2);
+		case syscallWrite:
+			return handleWrite(a0, a1, a2);
 
-
-	default:
-	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
-	    Lib.assertNotReached("Unknown system call!");
+		default:
+		    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
+		    Lib.assertNotReached("Unknown system call!");
 	}
 	return 0;
     }
@@ -548,6 +651,7 @@ public class UserProcess {
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
     private OpenFile[] fileDescriptor;
+    protected int[] filePos;
     private static final int maxConcurrentFiles =16;
     
     
