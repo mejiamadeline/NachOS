@@ -29,7 +29,7 @@ public class UserProcess {
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
 	fileDescriptor = new OpenFile[maxConcurrentFiles];
 	fileDescriptor[0] = UserKernel.console.openForReading();
-	fileDescriptor[1] = UserKernel.console.openForReading();
+	fileDescriptor[1] = UserKernel.console.openForWriting();
 	filePos = new int[maxConcurrentFiles];
     }
     
