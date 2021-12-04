@@ -427,7 +427,7 @@ public class UserProcess {
 	
     private int handleUnlink(int file){
 	
-	int index = -1;
+	int length = -1;
 	String name = readVirtualMemoryString(file,300);
 	if(name == null)
 		return -1;
@@ -435,14 +435,14 @@ public class UserProcess {
 	for (int i = 0; i < fileDescriptor.length; i++){
 		OpenFile current = fileDescriptor[i];
 		if (current != null && filename == current.getName())
-			index = i;
+			length = i;
 	}
 
-	if (index != -1)
+	if (length != -1)
 		handleClose(index);
 
 	if (ThreadedKernel.fileSystem.remove(filename))
-		return 0;
+		return length;
 
 	return -1;
 
