@@ -410,7 +410,42 @@ public class UserProcess {
 		
    }
     	
-    
+    private int handleClose(int file)){
+	if(file < 0 || file > maxConcurrentFiles)
+		return -1;
+	OpenFile file = fileDescriptor[file];
+	if(file == null)
+		return -1;
+	else{
+		file.close();
+		fileDescriptor[file] = null;
+		return 0;
+	}    
+	
+    }
+	
+    private int handleUnlink(int file){
+	
+	int index = -1;
+	String name = readVirtualMemoryString(file,300);
+	if(name == null)
+		return -1;
+		
+	for (int i = 0; i < fileDescriptor.length; i++){
+		OpenFile current = fileDescriptor[i];
+		if (current != null && filename == current.getName())
+			index = i;
+	}
+
+	if (index != -1)
+		handleClose(index);
+
+	if (ThreadedKernel.fileSystem.remove(filename))
+		return 0;
+
+	return -1;
+
+    }
 
 
     private static final int
