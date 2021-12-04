@@ -27,7 +27,13 @@ public class UserProcess {
 	pageTable = new TranslationEntry[numPhysPages];
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
+		fileDescriptor = new OpenFile[maxConcurrentFiles];
+		fileDescriptor[0] = UserKernel.console.openForReading();
+		fileDescriptor[1] = UserKernel.console.openForReading();
     }
+    
+    
+    
     
     /**
      * Allocate and return a new process of the correct class. The class name
@@ -345,6 +351,66 @@ public class UserProcess {
 	Lib.assertNotReached("Machine.halt() did not halt machine!");
 	return 0;
     }
+    
+    private int handleCreate(int name)
+    {
+    	String file = readVirtualMemoryString(name, 256);
+    	OpenFile namedFile = ThreadedKernel.fileSystem.open(file, true);
+    	
+    if (file != null)
+    {
+    	for(int i = 0; i < 16; i++)
+    	{
+    		if(fileDescriptor[i] == null)
+    		{
+    			fileDescriptor[i] = namedFile;
+    			return i;
+    		}
+    		
+    		else
+    		{
+    			return -1;
+    		}
+    	}
+    }
+    else
+    {
+    	return -1;
+    }
+    
+	return -1;
+    }
+    
+    private int handleOpen(int file)
+    {
+    	String name = readVirtualMemoryString(file, 256);
+    	OpenFile namedFile = ThreadedKernel.fileSystem.open(name, false);
+    	
+    	if (name != null)
+        {
+        	for(int i = 0; i < 16; i++)
+        	{
+        		if(fileDescriptor[i] == null)
+        		{
+        			fileDescriptor[i] = namedFile;
+        			return i;
+        		}
+        		
+        		else
+        		{
+        			return -1;
+        		}
+        	}
+        }
+        else
+        {
+        	return -1;
+        }
+		return -1;
+		
+   }
+    	
+    
 
 
     private static final int
@@ -446,4 +512,8 @@ public class UserProcess {
 	
     private static final int pageSize = Processor.pageSize;
     private static final char dbgProcess = 'a';
+    private OpenFile[] fileDescriptor;
+    private static final int maxConcurrentFiles =16;
+    
+    
 }
